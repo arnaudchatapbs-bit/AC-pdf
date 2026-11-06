@@ -36,6 +36,22 @@ Les annotations restent modifiables tant que vous n'enregistrez pas. Elles sont 
 le contenu du PDF au moment de l'enregistrement, du partage ou d'une opération sur les pages
 ou le formulaire.
 
+## Installer sans câble (Release GitHub)
+
+Chaque tag de version déclenche une compilation sur GitHub ([workflow](.github/workflows/release-apk.yml)) :
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+Quelques minutes plus tard, l'APK signé apparaît sur la page **Releases** du dépôt. Sur le téléphone,
+ouvrez cette page, téléchargez l'APK et installez-le. Les mises à jour s'installent par-dessus.
+
+Prérequis : les secrets `ANDROID_KEYSTORE_BASE64` et `ANDROID_KEYSTORE_PASSWORD` dans
+*Settings > Secrets and variables > Actions*. La clé de signature est conservée hors du dépôt
+(`C:\claude\appli-pdf-signature`) ; le build local la lit via `android/key.properties` (ignoré par git).
+
 ## Compiler
 
 Outils installés sur ce PC : Flutter dans `C:\src\flutter`, SDK Android dans `C:\src\android-sdk`.
@@ -54,8 +70,6 @@ C:\src\flutter\bin\flutter install
 
 **iOS** : la compilation nécessite un Mac avec Xcode (`flutter build ios`).
 
-**Publication sur le Play Store** : l'APK actuel est signé avec la clé de débogage. Pour publier, créez une
-clé de signature (voir la documentation Flutter « Build and release an Android app »).
 
 ## Licences
 
