@@ -66,6 +66,16 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Police Unicode : chargée par rootBundle pour l'écrire dans les PDF,
+  # et déclarée comme police pour un aperçu identique à l'écran.
+  assets:
+    - assets/fonts/Roboto-Regular.ttf
+
+  fonts:
+    - family: PdfRoboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

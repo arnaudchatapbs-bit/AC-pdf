@@ -132,6 +132,11 @@ class _EditorScreenState extends State<EditorScreen> {
     try {
       final font = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
       _fontBytes = font.buffer.asUint8List();
+    } catch (_) {
+      // Sans police intégrée, le texte ajouté utilisera Helvetica (sans €).
+      _fontBytes = null;
+    }
+    try {
       await _loadBytes(await _file.readAsBytes());
     } catch (e) {
       setState(() => _error = 'Impossible d\'ouvrir ce PDF.\n$e');
