@@ -48,6 +48,11 @@ git push origin v1.0.1
 Quelques minutes plus tard, l'APK signé apparaît sur la page **Releases** du dépôt. Sur le téléphone,
 ouvrez cette page, téléchargez l'APK et installez-le. Les mises à jour s'installent par-dessus.
 
+À partir de la version 1.0.2, l'app vérifie au démarrage (si Internet est disponible) la dernière
+release du dépôt et propose la mise à jour : téléchargement dans l'app puis confirmation dans
+l'installeur Android. Vérification manuelle : menu ⋮ > « Rechercher une mise à jour ». Le dépôt
+doit rester public.
+
 Prérequis : les secrets `ANDROID_KEYSTORE_BASE64` et `ANDROID_KEYSTORE_PASSWORD` dans
 *Settings > Secrets and variables > Actions*. La clé de signature est conservée hors du dépôt
 (`C:\claude\appli-pdf-signature`) ; le build local la lit via `android/key.properties` (ignoré par git).

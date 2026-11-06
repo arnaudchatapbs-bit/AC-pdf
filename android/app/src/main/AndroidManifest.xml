@@ -1,4 +1,15 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Uniquement pour vérifier/télécharger les mises à jour sur GitHub.
+         Les PDF ne sont jamais envoyés sur Internet. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ouvrir l'installeur Android pour une mise à jour téléchargée. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Ajoutées par open_filex mais inutiles ici (l'APK est dans le cache privé). -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove" />
     <application
         android:label="PDF Facile"
         android:name="${applicationName}"

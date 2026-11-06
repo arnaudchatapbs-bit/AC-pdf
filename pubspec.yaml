@@ -43,6 +43,8 @@ dependencies:
   pdfrx_engine: 0.9.1
   flutter_localizations:
     sdk: flutter
+  package_info_plus: ^10.2.2
+  open_filex: ^5.0.0
 
 dev_dependencies:
   flutter_test:

@@ -4,12 +4,15 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../services/document_store.dart';
 import '../services/pdf_import.dart';
 import '../services/pdf_service.dart';
+import '../services/update_service.dart';
 import '../widgets/dialogs.dart';
+import '../widgets/update_dialog.dart';
 import 'editor_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,6 +30,31 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _refresh();
+    _autoCheckUpdate();
+  }
+
+  /// Une vérification discrète par lancement ; sans réseau, rien ne s'affiche.
+  static bool _updateChecked = false;
+  Future<void> _autoCheckUpdate() async {
+    if (_updateChecked || !UpdateService.supported) return;
+    _updateChecked = true;
+    final info = await UpdateService.check();
+    if (info != null && mounted) await offerUpdate(context, info);
+  }
+
+  Future<void> _about() async {
+    final p = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    showAboutDialog(
+      context: context,
+      applicationName: 'PDF Facile',
+      applicationVersion: 'Version ${p.version}',
+      applicationIcon: Icon(Icons.picture_as_pdf, color: Theme.of(context).colorScheme.primary, size: 40),
+      children: const [
+        Text('Éditeur PDF hors ligne. Internet sert uniquement à vérifier les mises à jour ; '
+            'vos documents restent sur le téléphone.'),
+      ],
+    );
   }
 
   Future<void> _refresh() async {
@@ -197,7 +225,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('PDF Facile')),
+      appBar: AppBar(
+        title: const Text('PDF Facile'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (v) => v == 'update' ? checkForUpdateManually(context) : _about(),
+            itemBuilder: (_) => [
+              if (UpdateService.supported)
+                const PopupMenuItem(
+                    value: 'update',
+                    child: ListTile(leading: Icon(Icons.system_update), title: Text('Rechercher une mise à jour'))),
+              const PopupMenuItem(
+                  value: 'about', child: ListTile(leading: Icon(Icons.info_outline), title: Text('À propos'))),
+            ],
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateMenu,
         icon: const Icon(Icons.add),
