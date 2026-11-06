@@ -11,6 +11,7 @@ aucune connexion n'est nécessaire, aucun fichier ne quitte le téléphone (sauf
 | **Signature et images** | dessiner une signature au doigt (mémorisée pour la suite), insérer une photo (galerie ou appareil photo) |
 | **Pages** | réorganiser par glisser-déposer, pivoter, dupliquer, supprimer, ajouter des pages blanches, fusionner avec un autre PDF |
 | **Formulaires** | remplir les champs texte, cases à cocher, boutons radio et listes ; option « figer » le formulaire |
+| **Export Word** | conversion en .docx : « texte modifiable » (paragraphes, tailles, retraits) ou « mise en page identique » (pages en images, idéal pour les scans) |
 | **Documents** | ouvrir un PDF (y compris protégé par mot de passe), créer un PDF vierge, créer un PDF à partir de photos, renommer, partager, enregistrer une copie |
 
 Annuler et rétablir couvrent toutes les actions. Pour zoomer, pincez à deux doigts (avec n'importe quel outil).

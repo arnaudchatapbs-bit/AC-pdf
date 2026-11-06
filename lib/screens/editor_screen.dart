@@ -16,6 +16,7 @@ import '../services/pdf_service.dart';
 import '../widgets/annotation_painter.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/page_image.dart';
+import '../widgets/word_export_flow.dart';
 import 'form_screen.dart';
 import 'pages_screen.dart';
 import 'signature_screen.dart';
@@ -255,6 +256,12 @@ class _EditorScreenState extends State<EditorScreen> {
     final uri = await FilePicker.saveFile(
         fileName: DocumentStore.displayName(_file), bytes: bytes, mimeType: 'application/pdf');
     if (uri != null && mounted) toast(context, 'Copie enregistrée');
+  }
+
+  Future<void> _exportWord() async {
+    final bytes = await _currentBytes();
+    if (!mounted) return;
+    await exportToWord(context, bytes, DocumentStore.displayName(_file));
   }
 
   Future<void> _rename() async {
@@ -832,6 +839,8 @@ class _EditorScreenState extends State<EditorScreen> {
                     _share();
                   case 'export':
                     _exportCopy();
+                  case 'word':
+                    _exportWord();
                   case 'rename':
                     _rename();
                 }
@@ -844,6 +853,8 @@ class _EditorScreenState extends State<EditorScreen> {
                 PopupMenuItem(value: 'share', child: ListTile(leading: Icon(Icons.share_outlined), title: Text('Partager'))),
                 PopupMenuItem(
                     value: 'export', child: ListTile(leading: Icon(Icons.save_alt), title: Text('Enregistrer une copie…'))),
+                PopupMenuItem(
+                    value: 'word', child: ListTile(leading: Icon(Icons.description_outlined), title: Text('Exporter en Word'))),
                 PopupMenuItem(value: 'rename', child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Renommer'))),
               ],
             ),

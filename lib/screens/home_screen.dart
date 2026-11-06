@@ -13,6 +13,7 @@ import '../services/pdf_service.dart';
 import '../services/update_service.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/update_dialog.dart';
+import '../widgets/word_export_flow.dart';
 import 'editor_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -177,6 +178,10 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Enregistrer une copie sur le téléphone'),
               onTap: () => Navigator.pop(ctx, 'export')),
           ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Exporter en Word (.docx)'),
+              onTap: () => Navigator.pop(ctx, 'word')),
+          ListTile(
               leading: const Icon(Icons.delete_outline),
               title: const Text('Supprimer'),
               onTap: () => Navigator.pop(ctx, 'delete')),
@@ -201,6 +206,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final uri = await FilePicker.saveFile(
             fileName: DocumentStore.displayName(file), bytes: await file.readAsBytes(), mimeType: 'application/pdf');
         if (uri != null && mounted) toast(context, 'Copie enregistrée');
+      case 'word':
+        final pdf = await file.readAsBytes();
+        if (mounted) await exportToWord(context, pdf, DocumentStore.displayName(file));
       case 'delete':
         final ok = await confirm(context, 'Supprimer ?',
             '« ${DocumentStore.displayName(file)} » sera supprimé de l\'application.',
