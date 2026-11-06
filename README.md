@@ -1,4 +1,4 @@
-# PDF Facile
+# Mathias pdf
 
 Application mobile Flutter (Android et iOS) pour modifier facilement des PDF, **100 % hors ligne** :
 aucune connexion n'est nécessaire, aucun fichier ne quitte le téléphone (sauf si vous le partagez).
@@ -7,11 +7,11 @@ aucune connexion n'est nécessaire, aucun fichier ne quitte le téléphone (sauf
 
 | Catégorie | Ce que vous pouvez faire |
 |---|---|
-| **Annoter** | stylo à main levée, surligneur, texte (accents, €), rectangle, cercle, ligne, flèche, gomme ; couleur et épaisseur au choix ; sélection, déplacement, redimensionnement, duplication |
-| **Signature et images** | dessiner une signature au doigt (mémorisée pour la suite), insérer une photo (galerie ou appareil photo) |
+| **Annoter** | stylo à main levée, surligneur, texte noir par défaut, gras en option (accents, €), rectangle, cercle, ligne, flèche, gomme ; couleur et épaisseur au choix ; sélection, déplacement, redimensionnement, duplication |
+| **Signature et images** | dessiner une signature au doigt (mémorisée pour la suite), insérer une photo en pleine page (galerie ou appareil photo), avec choix portrait ou paysage pour la page |
 | **Pages** | réorganiser par glisser-déposer, pivoter, dupliquer, supprimer, ajouter des pages blanches, fusionner avec un autre PDF |
 | **Formulaires** | remplir les champs texte, cases à cocher, boutons radio et listes ; option « figer » le formulaire |
-| **Export Word** | conversion en .docx : « texte modifiable » (paragraphes, tailles, retraits) ou « mise en page identique » (pages en images, idéal pour les scans) |
+| **Export Word** | conversion en .docx à l’identique : chaque page est insérée comme une image |
 | **Documents** | ouvrir un PDF (y compris protégé par mot de passe), créer un PDF vierge, créer un PDF à partir de photos, renommer, partager, enregistrer une copie |
 
 Annuler et rétablir couvrent toutes les actions. Pour zoomer, pincez à deux doigts (avec n'importe quel outil).

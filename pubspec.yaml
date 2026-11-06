@@ -1,5 +1,5 @@
 name: pdf_facile
-description: "PDF Facile - éditeur PDF hors ligne (annotations, signatures, formulaires, pages)."
+description: "Mathias pdf - éditeur PDF hors ligne (annotations, signatures, formulaires, pages)."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -46,6 +46,7 @@ dependencies:
   package_info_plus: ^10.2.2
   open_filex: ^5.0.0
   archive: ^4.6.0
+  image: ^4.12.0
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +58,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -73,11 +75,14 @@ flutter:
   # et déclarée comme police pour un aperçu identique à l'écran.
   assets:
     - assets/fonts/Roboto-Regular.ttf
+    - assets/fonts/Roboto-Bold.ttf
 
   fonts:
     - family: PdfRoboto
       fonts:
         - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

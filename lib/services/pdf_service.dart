@@ -88,11 +88,13 @@ class PdfService {
   /// Écrit les annotations ([byPage] : index de page 0-based -> annotations)
   /// dans le contenu des pages. Les coordonnées des annotations sont relatives
   /// à la page telle qu'elle est affichée (rotation incluse).
-  /// [fontBytes] : police TrueType (Unicode) pour le texte ; Helvetica sinon.
+  /// [fontBytes] / [boldFontBytes] : polices TrueType (Unicode) normale et
+  /// grasse pour le texte ; Helvetica sinon.
   static Uint8List flattenAnnotations(
     Uint8List bytes,
     Map<int, List<Annot>> byPage, {
     List<int>? fontBytes,
+    List<int>? boldFontBytes,
   }) {
     if (byPage.values.every((l) => l.isEmpty)) return bytes;
     final doc = sf.PdfDocument(inputBytes: bytes);
@@ -100,7 +102,7 @@ class PdfService {
       for (final entry in byPage.entries) {
         if (entry.value.isEmpty) continue;
         if (entry.key < 0 || entry.key >= doc.pages.count) continue;
-        _drawOnPage(doc.pages[entry.key], entry.value, fontBytes);
+        _drawOnPage(doc.pages[entry.key], entry.value, fontBytes, boldFontBytes);
       }
       return Uint8List.fromList(doc.saveSync());
     } finally {
@@ -115,7 +117,7 @@ class PdfService {
         sf.PdfPageRotateAngle.rotateAngle270 => 3,
       };
 
-  static void _drawOnPage(sf.PdfPage page, List<Annot> annots, List<int>? fontBytes) {
+  static void _drawOnPage(sf.PdfPage page, List<Annot> annots, List<int>? fontBytes, List<int>? boldFontBytes) {
     final g = page.graphics;
     // Taille non pivotée de la zone de dessin (espace des graphiques Syncfusion).
     final size = g.clientSize;
@@ -181,9 +183,11 @@ class PdfService {
         case AnnotType.text:
           final text = a.text ?? '';
           if (text.isEmpty) break;
-          final sf.PdfFont font = fontBytes != null
-              ? sf.PdfTrueTypeFont(fontBytes, a.fontSize)
-              : sf.PdfStandardFont(sf.PdfFontFamily.helvetica, a.fontSize);
+          final ttf = a.bold ? boldFontBytes : fontBytes;
+          final sf.PdfFont font = ttf != null
+              ? sf.PdfTrueTypeFont(ttf, a.fontSize)
+              : sf.PdfStandardFont(sf.PdfFontFamily.helvetica, a.fontSize,
+                  style: a.bold ? sf.PdfFontStyle.bold : sf.PdfFontStyle.regular);
           final brush = sf.PdfSolidBrush(color);
           final origin = pt(a.points.first);
           final lines = text.split('\n');

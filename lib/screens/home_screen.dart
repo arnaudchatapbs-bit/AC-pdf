@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../services/document_store.dart';
+import '../services/image_utils.dart';
 import '../services/pdf_import.dart';
 import '../services/pdf_service.dart';
 import '../services/update_service.dart';
@@ -48,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     showAboutDialog(
       context: context,
-      applicationName: 'PDF Facile',
+      applicationName: 'Mathias pdf',
       applicationVersion: 'Version ${p.version}',
       applicationIcon: Icon(Icons.picture_as_pdf, color: Theme.of(context).colorScheme.primary, size: 40),
       children: const [
@@ -97,11 +98,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (source == ImageSource.gallery) {
       final xs = await picker.pickMultiImage(maxWidth: 2400, maxHeight: 2400, imageQuality: 85);
       for (final x in xs) {
-        images.add(await x.readAsBytes());
+        images.add(await normalizePhoto(await x.readAsBytes()));
       }
     } else {
       final x = await picker.pickImage(source: ImageSource.camera, maxWidth: 2400, maxHeight: 2400, imageQuality: 85);
-      if (x != null) images.add(await x.readAsBytes());
+      if (x != null) images.add(await normalizePhoto(await x.readAsBytes()));
     }
     if (images.isEmpty || !mounted) return;
     final bytes = await withProgress(context, () async => PdfService.createFromImages(images),
@@ -234,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PDF Facile'),
+        title: const Text('Mathias pdf'),
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) => v == 'update' ? checkForUpdateManually(context) : _about(),

@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/annotation.dart';
 import '../services/document_store.dart';
+import '../services/image_utils.dart';
 import '../services/page_service.dart';
 import '../services/pdf_service.dart';
 import '../widgets/annotation_painter.dart';
@@ -22,8 +23,8 @@ import 'pages_screen.dart';
 import 'signature_screen.dart';
 
 // Tâches exécutées en arrière-plan (isolate) pour ne pas figer l'interface.
-Uint8List _flattenJob((Uint8List, Map<int, List<Annot>>, Uint8List?) a) =>
-    PdfService.flattenAnnotations(a.$1, a.$2, fontBytes: a.$3);
+Uint8List _flattenJob((Uint8List, Map<int, List<Annot>>, Uint8List?, Uint8List?) a) =>
+    PdfService.flattenAnnotations(a.$1, a.$2, fontBytes: a.$3, boldFontBytes: a.$4);
 
 Uint8List _writeFormJob((Uint8List, List<FormFieldInfo>, bool) a) =>
     PdfService.writeFormFields(a.$1, a.$2, flatten: a.$3);
@@ -89,9 +90,11 @@ class _EditorScreenState extends State<EditorScreen> {
   String? _error;
 
   Tool _tool = Tool.pan;
-  Color _color = _palette.first;
+  Color _color = _palette.first; // stylo et formes
   double _stroke = 2;
+  Color _textColor = const Color(0xFF000000); // texte : noir par défaut
   double _fontSize = 14;
+  bool _textBold = false;
   Color _highlightColor = const Color(0xFFFFEB3B);
 
   String? _selectedId;
@@ -107,6 +110,7 @@ class _EditorScreenState extends State<EditorScreen> {
   double _zoom = 1;
   final Map<String, ui.Image> _images = {};
   Uint8List? _fontBytes;
+  Uint8List? _boldFontBytes;
   int _docCounter = 0;
 
   List<Annot> get _pageAnnots => _annots.putIfAbsent(_page, () => []);
@@ -133,9 +137,12 @@ class _EditorScreenState extends State<EditorScreen> {
     try {
       final font = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
       _fontBytes = font.buffer.asUint8List();
+      final bold = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
+      _boldFontBytes = bold.buffer.asUint8List();
     } catch (_) {
       // Sans police intégrée, le texte ajouté utilisera Helvetica (sans €).
       _fontBytes = null;
+      _boldFontBytes = null;
     }
     try {
       await _loadBytes(await _file.readAsBytes());
@@ -214,8 +221,7 @@ class _EditorScreenState extends State<EditorScreen> {
     if (!_hasAnnots) return;
     final bytes = _bytes!;
     final annots = _annots;
-    final font = _fontBytes;
-    final out = await compute(_flattenJob, (bytes, annots, font));
+    final out = await compute(_flattenJob, (bytes, annots, _fontBytes, _boldFontBytes));
     _annots = {};
     _selectedId = null;
     await _loadBytes(out);
@@ -333,18 +339,39 @@ class _EditorScreenState extends State<EditorScreen> {
   // Images et signatures
   // ---------------------------------------------------------------------------
 
-  Future<void> _insertImageBytes(Uint8List bytes) async {
+  /// Rectangle normalisé d'une image de ratio [aspect] agrandie au maximum
+  /// dans la page courante (avec une petite marge).
+  List<Offset> _fullPageRect(double aspect) {
+    final page = _doc!.pages[_page];
+    final margin = 0.025 * (page.width < page.height ? page.width : page.height);
+    final availW = page.width - margin * 2, availH = page.height - margin * 2;
+    var w = availW, h = availW / aspect;
+    if (h > availH) {
+      h = availH;
+      w = availH * aspect;
+    }
+    final nw = w / page.width, nh = h / page.height;
+    return [Offset(0.5 - nw / 2, 0.5 - nh / 2), Offset(0.5 + nw / 2, 0.5 + nh / 2)];
+  }
+
+  Future<void> _insertImageBytes(Uint8List bytes, {bool fullPage = false}) async {
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
     final img = frame.image;
     final aspect = img.width / img.height;
     final page = _doc!.pages[_page];
-    // Largeur par défaut : 40 % de la page (35 % pour une signature large).
-    final w = aspect > 2.5 ? 0.35 : 0.4;
-    final h = w * page.width / aspect / page.height;
+    final List<Offset> points;
+    if (fullPage) {
+      points = _fullPageRect(aspect);
+    } else {
+      // Largeur par défaut : 40 % de la page (35 % pour une signature large).
+      final w = aspect > 2.5 ? 0.35 : 0.4;
+      final h = w * page.width / aspect / page.height;
+      points = [Offset(0.5 - w / 2, 0.5 - h / 2), Offset(0.5 + w / 2, 0.5 + h / 2)];
+    }
     final a = Annot(
       type: AnnotType.image,
-      points: [Offset(0.5 - w / 2, 0.5 - h / 2), Offset(0.5 + w / 2, 0.5 + h / 2)],
+      points: points,
       imageBytes: bytes,
       imageAspect: aspect,
     );
@@ -381,9 +408,96 @@ class _EditorScreenState extends State<EditorScreen> {
       ),
     );
     if (source == null) return;
-    final x = await ImagePicker().pickImage(source: source, maxWidth: 2000, maxHeight: 2000, imageQuality: 88);
+    final x = await ImagePicker().pickImage(source: source, maxWidth: 2400, maxHeight: 2400, imageQuality: 88);
     if (x == null) return;
-    await _insertImageBytes(await x.readAsBytes());
+    final bytes = await normalizePhoto(await x.readAsBytes());
+    final size = await _imageSize(bytes);
+    if (!mounted) return;
+
+    final page = _doc!.pages[_page];
+    final pageLandscape = page.width > page.height;
+    // Par défaut : l'orientation de la photo, qui remplit le mieux la page.
+    var landscape = size.width > size.height;
+    final choice = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Insérer la photo en pleine page', style: Theme.of(ctx).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: false, icon: Icon(Icons.crop_portrait), label: Text('Portrait')),
+                    ButtonSegment(value: true, icon: Icon(Icons.crop_landscape), label: Text('Paysage')),
+                  ],
+                  selected: {landscape},
+                  onSelectionChanged: (v) => setS(() => landscape = v.first),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  landscape == pageLandscape
+                      ? 'La page garde son orientation actuelle.'
+                      : "La page sera pivotée en ${landscape ? 'paysage' : 'portrait'} "
+                          '(son contenu actuel pivote aussi).',
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  icon: const Icon(Icons.fit_screen),
+                  label: const Text('Insérer'),
+                  onPressed: () => Navigator.pop(ctx, landscape),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    if (choice != pageLandscape) {
+      try {
+        await _rotateCurrentPage();
+      } catch (e) {
+        if (mounted) toast(context, 'Rotation impossible : $e');
+      }
+    }
+    if (!mounted) return;
+    await _insertImageBytes(bytes, fullPage: true);
+  }
+
+  Future<Size> _imageSize(Uint8List bytes) async {
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final size = Size(frame.image.width.toDouble(), frame.image.height.toDouble());
+    frame.image.dispose();
+    codec.dispose();
+    return size;
+  }
+
+  /// Pivote la page courante d'un quart de tour (portrait <-> paysage).
+  Future<void> _rotateCurrentPage() async {
+    final bytes = await _currentBytes();
+    if (!mounted) return;
+    final count = _doc!.pages.length;
+    final specs = [for (var i = 0; i < count; i++) PageSpec(0, i, quarterTurns: i == _page ? 1 : 0)];
+    final out = await withProgress(context, () => PageService.rebuildPages(bytes, specs),
+        message: 'Rotation de la page…');
+    _pushUndo();
+    await _loadBytes(out);
+  }
+
+  /// Agrandit une image sélectionnée à la pleine page.
+  void _fitImageToPage(Annot a) {
+    final aspect = a.imageAspect;
+    if (aspect == null) return;
+    _pushUndo();
+    setState(() => a.points = _fullPageRect(aspect));
   }
 
   /// S'assure que les images des annotations (ex. après annuler) sont décodées.
@@ -412,6 +526,7 @@ class _EditorScreenState extends State<EditorScreen> {
   Future<void> _editText({Annot? existing, Offset? at}) async {
     final ctrl = TextEditingController(text: existing?.text ?? '');
     var size = existing?.fontSize ?? _fontSize;
+    var bold = existing?.bold ?? _textBold;
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -423,7 +538,19 @@ class _EditorScreenState extends State<EditorScreen> {
               autofocus: true,
               minLines: 1,
               maxLines: 6,
+              style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.w400),
               decoration: const InputDecoration(hintText: 'Votre texte', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilterChip(
+                avatar: const Icon(Icons.format_bold),
+                label: const Text('Gras'),
+                selected: bold,
+                showCheckmark: false,
+                onSelected: (v) => setD(() => bold = v),
+              ),
             ),
             const SizedBox(height: 12),
             Row(children: [
@@ -445,6 +572,7 @@ class _EditorScreenState extends State<EditorScreen> {
     );
     if (result == null) return;
     _fontSize = size;
+    _textBold = bold;
     _pushUndo();
     setState(() {
       if (existing != null) {
@@ -454,10 +582,12 @@ class _EditorScreenState extends State<EditorScreen> {
         } else {
           existing
             ..text = result
-            ..fontSize = size;
+            ..fontSize = size
+            ..bold = bold;
         }
       } else if (result.trim().isNotEmpty && at != null) {
-        final a = Annot(type: AnnotType.text, points: [at], text: result, fontSize: size, color: _color);
+        final a = Annot(
+            type: AnnotType.text, points: [at], text: result, fontSize: size, bold: bold, color: _textColor);
         _pageAnnots.add(a);
         _selectedId = a.id;
       }
@@ -720,7 +850,8 @@ class _EditorScreenState extends State<EditorScreen> {
         }
 
         final isHighlight = _tool == Tool.highlight || _selected?.type == AnnotType.highlight;
-        final current = isHighlight ? _highlightColor : _color;
+        final isText = _tool == Tool.text || _selected?.type == AnnotType.text;
+        final current = isHighlight ? _highlightColor : (isText ? _textColor : _color);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -733,6 +864,8 @@ class _EditorScreenState extends State<EditorScreen> {
                     onTap: () => update(() {
                       if (isHighlight) {
                         _highlightColor = c;
+                      } else if (isText) {
+                        _textColor = c;
                       } else {
                         _color = c;
                       }
@@ -928,7 +1061,9 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget _buildBottomBar(PdfDocument doc) {
     final scheme = Theme.of(context).colorScheme;
     final sel = _tool == Tool.select ? _selected : null;
-    final styleColor = _tool == Tool.highlight ? _highlightColor : _color;
+    final styleColor = _tool == Tool.highlight
+        ? _highlightColor
+        : (_tool == Tool.text ? _textColor : _color);
     return Material(
       color: scheme.surface,
       elevation: 8,
@@ -947,6 +1082,11 @@ class _EditorScreenState extends State<EditorScreen> {
                       tooltip: 'Modifier le texte',
                       icon: const Icon(Icons.edit_note),
                       onPressed: () => _editText(existing: sel)),
+                if (sel.type == AnnotType.image)
+                  IconButton(
+                      tooltip: 'Pleine page',
+                      icon: const Icon(Icons.fit_screen),
+                      onPressed: () => _fitImageToPage(sel)),
                 IconButton(
                   tooltip: 'Dupliquer',
                   icon: const Icon(Icons.copy_outlined),

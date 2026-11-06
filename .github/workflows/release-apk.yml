@@ -63,20 +63,20 @@ jobs:
           ANDROID_KEY_ALIAS: pdffacile
         run: |
           flutter build apk --release --build-name "$BUILD_NAME" --build-number "${{ github.run_number }}"
-          mv build/app/outputs/flutter-apk/app-release.apk "PDF-Facile-$BUILD_NAME.apk"
+          mv build/app/outputs/flutter-apk/app-release.apk "Mathias-pdf-$BUILD_NAME.apk"
 
       - uses: actions/upload-artifact@v5
         with:
-          name: PDF-Facile-${{ env.BUILD_NAME }}
-          path: PDF-Facile-*.apk
+          name: Mathias-pdf-${{ env.BUILD_NAME }}
+          path: Mathias-pdf-*.apk
 
       - name: Publication de la release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: PDF-Facile-*.apk
+          files: Mathias-pdf-*.apk
           body: |
             ## Installer sur Android
-            1. Sur le téléphone, touchez **PDF-Facile-${{ env.BUILD_NAME }}.apk** ci-dessous pour le télécharger.
+            1. Sur le téléphone, touchez **Mathias-pdf-${{ env.BUILD_NAME }}.apk** ci-dessous pour le télécharger.
             2. Ouvrez le fichier téléchargé ; si Android le demande, autorisez « Installer des applications inconnues » pour le navigateur.
             3. Les versions suivantes s'installent par-dessus, sans perdre vos documents.

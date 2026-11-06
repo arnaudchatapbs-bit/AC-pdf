@@ -4,18 +4,6 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 
-/// Une ligne de texte extraite d'une page, en points PDF, axe Y vers le bas.
-class TextLine {
-  TextLine(this.text, {required this.left, required this.top, required this.bottom, double? right})
-      : right = right ?? left;
-  final String text;
-  final double left;
-  final double right;
-  final double top;
-  final double bottom;
-  double get height => bottom - top;
-}
-
 /// Élément d'un document Word.
 sealed class DocxBlock {}
 
@@ -50,102 +38,6 @@ class DocxPageImage extends DocxBlock {
 
 /// Saut de page (mode texte).
 class DocxPageBreak extends DocxBlock {}
-
-/// Rapport taille de police / hauteur des boîtes de caractères (ascendante à descendante ≈ 0,95 em).
-const double _glyphBoxToFontSize = 1.05;
-
-/// Regroupe les lignes d'une page en paragraphes, par heuristique :
-/// nouveau paragraphe si l'interligne est nettement plus grand, si la taille
-/// du texte change, si le retrait change, ou si une phrase se termine sur une
-/// ligne courte. Un alinéa (première ligne en retrait) reste dans le paragraphe.
-List<DocxParagraph> linesToParagraphs(List<TextLine> lines, {required double marginLeft}) {
-  final ls = lines.where((l) => l.text.trim().isNotEmpty).toList();
-  if (ls.isEmpty) return [];
-  final heights = ls.map((l) => l.height).where((h) => h > 0).toList()..sort();
-  final typical = heights.isEmpty ? 12.0 : heights[heights.length ~/ 2];
-  final maxRight = ls.map((l) => l.right).reduce(math.max);
-
-  // Écart vertical habituel entre deux lignes d'un même paragraphe :
-  // il ne doit pas compter comme espace entre paragraphes.
-  final smallGaps = <double>[];
-  for (var i = 1; i < ls.length; i++) {
-    final g = ls[i].top - ls[i - 1].bottom;
-    if (g >= 0 && g < typical * 0.8) smallGaps.add(g);
-  }
-  smallGaps.sort();
-  final typicalGap = smallGaps.isEmpty ? 0.0 : smallGaps[smallGaps.length ~/ 2];
-
-  final out = <DocxParagraph>[];
-  var pitchSum = 0.0;
-  final buf = StringBuffer();
-  TextLine? first;
-  TextLine? prev;
-  double? bodyLeft; // retrait des lignes après la première
-  var lineCount = 0;
-  var prevGap = 0.0;
-
-  double sizeOf(TextLine l) => (l.height > 0 ? l.height : typical).clamp(6.0, 72.0);
-
-  void flush() {
-    final f = first;
-    if (f == null) return;
-    final size = (sizeOf(f) * _glyphBoxToFontSize * 2).round() / 2; // demi-points
-    final left = bodyLeft ?? f.left;
-    out.add(DocxParagraph(
-      buf.toString().trim(),
-      fontSize: size,
-      indent: math.max(0, left - marginLeft),
-      firstLine: math.max(0, f.left - left),
-      spaceBefore: out.isEmpty ? 0.0 : (prevGap - typicalGap).clamp(0.0, 48.0),
-      lineSpacing: lineCount > 1 ? pitchSum / (lineCount - 1) : 0,
-    ));
-    pitchSum = 0;
-    buf.clear();
-    first = null;
-    bodyLeft = null;
-    lineCount = 0;
-  }
-
-  for (final l in ls) {
-    final p = prev;
-    if (p != null && first != null) {
-      final gap = l.top - p.bottom; // espace vertical entre les lignes
-      final lineH = math.max(sizeOf(p), sizeOf(l));
-      final sizeChanged = (sizeOf(l) - sizeOf(p)).abs() > lineH * 0.25;
-      final bigGap = gap > lineH * 0.8 || gap < -lineH * 0.5; // saut, ou retour en arrière (colonnes)
-      // Alinéa : la 2e ligne revient à gauche de la 1re -> même paragraphe.
-      final firstLineIndent = lineCount == 1 && l.left < first!.left - lineH * 0.5 && l.left >= first!.left - lineH * 6;
-      final refLeft = bodyLeft ?? first!.left;
-      final indentChanged = !firstLineIndent && (l.left - refLeft).abs() > lineH * 1.2;
-      final pText = p.text.trimRight();
-      final endsSentence = pText.endsWith('.') || pText.endsWith(':') || pText.endsWith('!') || pText.endsWith('?');
-      final nextIndented = l.left > p.left + lineH * 0.5;
-      final prevShort = p.right < maxRight - lineH * 3; // ligne qui s'arrête avant la marge droite
-      if (bigGap || sizeChanged || indentChanged || (endsSentence && (nextIndented || prevShort))) {
-        flush();
-        prevGap = math.max(0, gap);
-      } else {
-        if (firstLineIndent) bodyLeft = l.left;
-        pitchSum += l.top - p.top;
-        if (pText.endsWith('-') && !pText.endsWith(' -')) {
-          // Mot coupé en fin de ligne : on recolle.
-          final str = buf.toString();
-          buf
-            ..clear()
-            ..write(str.substring(0, str.length - 1));
-        } else {
-          buf.write(' ');
-        }
-      }
-    }
-    first ??= l;
-    buf.write(l.text.trim());
-    lineCount++;
-    prev = l;
-  }
-  flush();
-  return out;
-}
 
 /// Génère un fichier .docx (Office Open XML) minimal mais valide.
 class DocxBuilder {
@@ -299,7 +191,7 @@ class DocxBuilder {
         '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
         'xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" '
         'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
-        '<dc:title>${esc(title)}</dc:title><dc:creator>PDF Facile</dc:creator>'
+        '<dc:title>${esc(title)}</dc:title><dc:creator>Mathias pdf</dc:creator>'
         '<dcterms:created xsi:type="dcterms:W3CDTF">${now}Z</dcterms:created>'
         '<dcterms:modified xsi:type="dcterms:W3CDTF">${now}Z</dcterms:modified>'
         '</cp:coreProperties>';

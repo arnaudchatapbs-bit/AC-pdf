@@ -18,6 +18,7 @@ class Annot {
     this.strokeWidth = 2,
     this.text,
     this.fontSize = 14,
+    this.bold = false,
     this.imageBytes,
     this.imageAspect,
     String? id,
@@ -38,6 +39,9 @@ class Annot {
   /// Taille de police en points PDF.
   double fontSize;
 
+  /// Texte en gras.
+  bool bold;
+
   /// Image PNG/JPEG (images et signatures).
   Uint8List? imageBytes;
 
@@ -53,6 +57,7 @@ class Annot {
         strokeWidth: strokeWidth,
         text: text,
         fontSize: fontSize,
+        bold: bold,
         imageBytes: imageBytes,
         imageAspect: imageAspect,
       );

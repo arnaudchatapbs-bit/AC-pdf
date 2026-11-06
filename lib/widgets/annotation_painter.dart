@@ -38,6 +38,7 @@ class AnnotGeometry {
           style: TextStyle(
             fontFamily: kAnnotFont,
             fontSize: a.fontSize * scale,
+            fontWeight: a.bold ? FontWeight.w700 : FontWeight.w400,
             color: a.color,
             height: 1.0,
           ),

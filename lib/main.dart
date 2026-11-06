@@ -7,23 +7,39 @@ import 'screens/home_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await pdfrxFlutterInitialize();
-  runApp(const PdfFacileApp());
+  runApp(const MathiasPdfApp());
 }
 
-class PdfFacileApp extends StatelessWidget {
-  const PdfFacileApp({super.key});
+class MathiasPdfApp extends StatelessWidget {
+  const MathiasPdfApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFFD84315);
+    // Tons bleus et gris clair.
+    const seed = Color(0xFF1E6FD9);
+    final light = ColorScheme.fromSeed(seedColor: seed).copyWith(
+      primary: const Color(0xFF1E6FD9),
+      surface: const Color(0xFFF5F7FA),
+      surfaceContainerLowest: const Color(0xFFFFFFFF),
+      surfaceContainerLow: const Color(0xFFF0F2F5),
+      surfaceContainer: const Color(0xFFEBEEF2),
+      surfaceContainerHigh: const Color(0xFFE5E8ED),
+      surfaceContainerHighest: const Color(0xFFDFE3E8),
+    );
+    final dark = ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark);
     return MaterialApp(
-      title: 'PDF Facile',
+      title: 'Mathias pdf',
       debugShowCheckedModeBanner: false,
       locale: const Locale('fr'),
       supportedLocales: const [Locale('fr'), Locale('en')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      theme: ThemeData(colorSchemeSeed: seed, useMaterial3: true),
-      darkTheme: ThemeData(colorSchemeSeed: seed, brightness: Brightness.dark, useMaterial3: true),
+      theme: ThemeData(
+        colorScheme: light,
+        useMaterial3: true,
+        scaffoldBackgroundColor: light.surface,
+        appBarTheme: AppBarTheme(backgroundColor: light.surfaceContainer, foregroundColor: const Color(0xFF1F2933)),
+      ),
+      darkTheme: ThemeData(colorScheme: dark, useMaterial3: true),
       home: const HomeScreen(),
     );
   }

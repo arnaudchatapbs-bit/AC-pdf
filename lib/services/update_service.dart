@@ -64,7 +64,7 @@ class UpdateService {
           .timeout(const Duration(seconds: 10));
       req.headers
         ..set(HttpHeaders.acceptHeader, 'application/vnd.github+json')
-        ..set(HttpHeaders.userAgentHeader, 'PDF-Facile-app');
+        ..set(HttpHeaders.userAgentHeader, 'Mathias-pdf-app');
       final res = await req.close().timeout(const Duration(seconds: 10));
       final body = await res.transform(utf8.decoder).join().timeout(const Duration(seconds: 15));
       if (res.statusCode != 200) {
@@ -101,7 +101,7 @@ class UpdateService {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
     try {
       final req = await client.getUrl(Uri.parse(info.apkUrl));
-      req.headers.set(HttpHeaders.userAgentHeader, 'PDF-Facile-app');
+      req.headers.set(HttpHeaders.userAgentHeader, 'Mathias-pdf-app');
       final res = await req.close();
       if (res.statusCode != 200) throw HttpException('Téléchargement impossible (${res.statusCode})');
       final total = res.contentLength > 0 ? res.contentLength : info.size;
