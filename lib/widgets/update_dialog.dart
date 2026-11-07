@@ -12,7 +12,7 @@ Future<void> offerUpdate(BuildContext context, UpdateInfo info) async {
       icon: const Icon(Icons.system_update),
       title: const Text('Mise à jour disponible'),
       content: Text(
-        'Mathias pdf ${info.version} est disponible (vous avez la ${info.currentVersion}).\n\n'
+        'ACpdf ${info.version} est disponible (vous avez la ${info.currentVersion}).\n\n'
         'Le téléchargement$sizeMb nécessite Internet. Vos documents sont conservés.',
       ),
       actions: [
@@ -64,7 +64,7 @@ Future<void> checkForUpdateManually(BuildContext context) async {
         message: 'Recherche de mise à jour…');
     if (!context.mounted) return;
     if (info == null) {
-      toast(context, 'Mathias pdf est à jour');
+      toast(context, 'ACpdf est à jour');
     } else {
       await offerUpdate(context, info);
     }

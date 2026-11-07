@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     showAboutDialog(
       context: context,
-      applicationName: 'Mathias pdf',
+      applicationName: 'ACpdf',
       applicationVersion: 'Version ${p.version}',
       applicationIcon: Icon(Icons.picture_as_pdf, color: Theme.of(context).colorScheme.primary, size: 40),
       children: const [
@@ -235,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mathias pdf'),
+        title: const Text('ACpdf'),
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) => v == 'update' ? checkForUpdateManually(context) : _about(),
