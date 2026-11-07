@@ -1,0 +1,138 @@
+# Compile l'APK Android signé et l'IPA iPhone, puis les publie dans une Release GitHub.
+#
+# Déclenchement : pousser un tag de version, par exemple
+#   git tag v1.3.0 && git push origin v1.3.0
+# ou lancer le workflow à la main depuis l'onglet « Actions » (fichiers disponibles en artefacts).
+#
+# Secrets requis (Settings > Secrets and variables > Actions) :
+#   ANDROID_KEYSTORE_BASE64   contenu de la clé de signature encodé en base64
+#   ANDROID_KEYSTORE_PASSWORD mot de passe de la clé
+#
+# L'IPA iPhone n'est pas signée (pas de compte Apple Developer requis) : elle s'installe
+# avec Sideloadly ou AltStore, qui la signent avec un identifiant Apple gratuit.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: 3.47.9
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Clé de signature
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_BASE64 manquant : l'APK ne pourrait pas être mis à jour par-dessus l'ancien."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Numéro de version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "BUILD_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "BUILD_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')" >> "$GITHUB_ENV"
+          fi
+
+      - run: flutter pub get
+
+      - name: Compilation
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: pdffacile
+        run: |
+          flutter build apk --release --build-name "$BUILD_NAME" --build-number "${{ github.run_number }}"
+          mv build/app/outputs/flutter-apk/app-release.apk "ACpdf-$BUILD_NAME.apk"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: android
+          path: ACpdf-*.apk
+
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Numéro de version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "BUILD_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "BUILD_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')" >> "$GITHUB_ENV"
+          fi
+
+      - run: flutter pub get
+
+      - name: Compilation (non signée)
+        run: |
+          flutter build ios --release --no-codesign --build-name "$BUILD_NAME" --build-number "${{ github.run_number }}"
+          mkdir Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qry "ACpdf-$BUILD_NAME.ipa" Payload
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: ios
+          path: ACpdf-*.ipa
+
+  release:
+    # L'APK est publié même si la compilation iPhone échoue.
+    needs: [android, ios]
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.android.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publication de la release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          body: |
+            ## Installer sur Android
+            1. Sur le téléphone, touchez le fichier **ACpdf-….apk** ci-dessous pour le télécharger.
+            2. Ouvrez le fichier téléchargé ; si Android le demande, autorisez « Installer des applications inconnues » pour le navigateur.
+            3. Les versions suivantes s'installent par-dessus, sans perdre vos documents.
+
+            ## Installer sur iPhone
+            1. Sur un ordinateur, téléchargez le fichier **ACpdf-….ipa** ci-dessous.
+            2. Installez-le avec [Sideloadly](https://sideloadly.io) (ou AltStore) en vous connectant avec votre identifiant Apple, iPhone branché.
+            3. Sur l'iPhone : Réglages > Général > VPN et gestion de l'appareil > faites confiance à votre identifiant.
+            4. Avec un identifiant Apple gratuit, l'app doit être réinstallée tous les 7 jours (AltStore le fait automatiquement).

@@ -7,11 +7,11 @@ import 'screens/home_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await pdfrxFlutterInitialize();
-  runApp(const MathiasPdfApp());
+  runApp(const AcPdfApp());
 }
 
-class MathiasPdfApp extends StatelessWidget {
-  const MathiasPdfApp({super.key});
+class AcPdfApp extends StatelessWidget {
+  const AcPdfApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class MathiasPdfApp extends StatelessWidget {
     );
     final dark = ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark);
     return MaterialApp(
-      title: 'Mathias pdf',
+      title: 'ACpdf',
       debugShowCheckedModeBanner: false,
       locale: const Locale('fr'),
       supportedLocales: const [Locale('fr'), Locale('en')],
