@@ -46,27 +46,9 @@ git tag v1.0.1
 git push origin v1.0.1
 ```
 
-Quelques minutes plus tard, l'APK Android signé et l'IPA iPhone apparaissent sur la page **Releases**
+Quelques minutes plus tard, l'APK Android signé apparaît sur la page **Releases**
 du dépôt. Sur un téléphone Android, ouvrez cette page, téléchargez l'APK et installez-le. Les mises à
 jour s'installent par-dessus.
-
-### iPhone
-
-L'IPA est compilée sur un Mac de GitHub, **sans signature** : aucun compte Apple Developer payant
-n'est nécessaire, mais Apple n'autorise l'installation que d'une app signée. Pour l'installer :
-
-1. Sur un ordinateur (Windows ou Mac), téléchargez `ACpdf-x.y.z.ipa` depuis la release.
-2. Ouvrez [Sideloadly](https://sideloadly.io) (ou AltStore), branchez l'iPhone, glissez l'IPA et
-   connectez-vous avec votre identifiant Apple : l'outil signe l'app et l'installe.
-3. Sur l'iPhone : *Réglages > Général > VPN et gestion de l'appareil* > faites confiance à votre
-   identifiant. Activez aussi le *Mode développeur* (*Réglages > Confidentialité et sécurité*) si demandé.
-
-Avec un identifiant Apple gratuit, la signature expire au bout de **7 jours** : réinstallez avec
-Sideloadly, ou utilisez AltStore qui la renouvelle automatiquement. Avec un compte Apple Developer
-(99 €/an) la signature dure un an et l'app peut être distribuée via TestFlight.
-
-Les PDF de l'app sont visibles dans l'app **Fichiers** de l'iPhone (*Sur mon iPhone > ACpdf*).
-La recherche de mise à jour intégrée n'existe que sur Android.
 
 À partir de la version 1.0.2, l'app vérifie au démarrage (si Internet est disponible) la dernière
 release du dépôt et propose la mise à jour : téléchargement dans l'app puis confirmation dans
@@ -93,7 +75,7 @@ avec le débogage activé :
 C:\src\flutter\bin\flutter install
 ```
 
-**iOS** : la compilation nécessite un Mac avec Xcode (`flutter build ios`) ; sinon, utilisez la release GitHub ci-dessus.
+**iOS** : la compilation nécessite un Mac avec Xcode (`flutter build ios`). La release GitHub ne publie que l'APK Android.
 
 
 ## Licences

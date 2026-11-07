@@ -1,4 +1,4 @@
-# Compile l'APK Android signé et l'IPA iPhone, puis les publie dans une Release GitHub.
+# Compile l'APK Android signé, puis le publie dans une Release GitHub.
 #
 # Déclenchement : pousser un tag de version, par exemple
 #   git tag v1.3.0 && git push origin v1.3.0
@@ -9,9 +9,6 @@
 # Secrets requis (Settings > Secrets and variables > Actions) :
 #   ANDROID_KEYSTORE_BASE64   contenu de la clé de signature encodé en base64
 #   ANDROID_KEYSTORE_PASSWORD mot de passe de la clé
-#
-# L'IPA iPhone n'est pas signée (pas de compte Apple Developer requis) : elle s'installe
-# avec Sideloadly ou AltStore, qui la signent avec un identifiant Apple gratuit.
 name: Release
 
 on:
@@ -92,53 +89,9 @@ jobs:
           name: android
           path: ACpdf-*.apk
 
-  ios:
-    runs-on: macos-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
-
-      - name: Numéro de version
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "BUILD_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
-          elif [ -n "$INPUT_VERSION" ]; then
-            echo "BUILD_NAME=${INPUT_VERSION#v}" >> "$GITHUB_ENV"
-          else
-            echo "BUILD_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')" >> "$GITHUB_ENV"
-          fi
-          # Numéro interne croissant déduit de la version (1.3.0 -> 10300) :
-          # Android refuse une mise à jour dont le numéro est plus petit.
-          source "$GITHUB_ENV"
-          IFS=. read -r MAJ MIN PAT <<< "$BUILD_NAME"
-          echo "BUILD_NUMBER=$(( ${MAJ:-0} * 10000 + ${MIN:-0} * 100 + ${PAT:-0} ))" >> "$GITHUB_ENV"
-
-      - run: flutter pub get
-
-      - name: Compilation (non signée)
-        run: |
-          flutter build ios --release --no-codesign --build-name "$BUILD_NAME" --build-number "$BUILD_NUMBER"
-          mkdir Payload
-          cp -R build/ios/iphoneos/Runner.app Payload/
-          zip -qry "ACpdf-$BUILD_NAME.ipa" Payload
-
-      - uses: actions/upload-artifact@v5
-        with:
-          name: ios
-          path: ACpdf-*.ipa
-
   release:
-    # L'APK est publié même si la compilation iPhone échoue.
-    needs: [android, ios]
-    if: always() && needs.android.result == 'success' && (startsWith(github.ref, 'refs/tags/v') || inputs.version != '')
+    needs: [android]
+    if: (startsWith(github.ref, 'refs/tags/v') || inputs.version != '')
     runs-on: ubuntu-latest
     steps:
       - name: Tag de la release
@@ -167,9 +120,3 @@ jobs:
             1. Sur le téléphone, touchez le fichier **ACpdf-….apk** ci-dessous pour le télécharger.
             2. Ouvrez le fichier téléchargé ; si Android le demande, autorisez « Installer des applications inconnues » pour le navigateur.
             3. Les versions suivantes s'installent par-dessus, sans perdre vos documents.
-
-            ## Installer sur iPhone
-            1. Sur un ordinateur, téléchargez le fichier **ACpdf-….ipa** ci-dessous.
-            2. Installez-le avec [Sideloadly](https://sideloadly.io) (ou AltStore) en vous connectant avec votre identifiant Apple, iPhone branché.
-            3. Sur l'iPhone : Réglages > Général > VPN et gestion de l'appareil > faites confiance à votre identifiant.
-            4. Avec un identifiant Apple gratuit, l'app doit être réinstallée tous les 7 jours (AltStore le fait automatiquement).
