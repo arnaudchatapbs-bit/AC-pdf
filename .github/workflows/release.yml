@@ -70,6 +70,11 @@ jobs:
           else
             echo "BUILD_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')" >> "$GITHUB_ENV"
           fi
+          # Numéro interne croissant déduit de la version (1.3.0 -> 10300) :
+          # Android refuse une mise à jour dont le numéro est plus petit.
+          source "$GITHUB_ENV"
+          IFS=. read -r MAJ MIN PAT <<< "$BUILD_NAME"
+          echo "BUILD_NUMBER=$(( ${MAJ:-0} * 10000 + ${MIN:-0} * 100 + ${PAT:-0} ))" >> "$GITHUB_ENV"
 
       - run: flutter pub get
 
@@ -79,7 +84,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: pdffacile
         run: |
-          flutter build apk --release --build-name "$BUILD_NAME" --build-number "${{ github.run_number }}"
+          flutter build apk --release --build-name "$BUILD_NAME" --build-number "$BUILD_NUMBER"
           mv build/app/outputs/flutter-apk/app-release.apk "ACpdf-$BUILD_NAME.apk"
 
       - uses: actions/upload-artifact@v5
@@ -110,12 +115,17 @@ jobs:
           else
             echo "BUILD_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')" >> "$GITHUB_ENV"
           fi
+          # Numéro interne croissant déduit de la version (1.3.0 -> 10300) :
+          # Android refuse une mise à jour dont le numéro est plus petit.
+          source "$GITHUB_ENV"
+          IFS=. read -r MAJ MIN PAT <<< "$BUILD_NAME"
+          echo "BUILD_NUMBER=$(( ${MAJ:-0} * 10000 + ${MIN:-0} * 100 + ${PAT:-0} ))" >> "$GITHUB_ENV"
 
       - run: flutter pub get
 
       - name: Compilation (non signée)
         run: |
-          flutter build ios --release --no-codesign --build-name "$BUILD_NAME" --build-number "${{ github.run_number }}"
+          flutter build ios --release --no-codesign --build-name "$BUILD_NAME" --build-number "$BUILD_NUMBER"
           mkdir Payload
           cp -R build/ios/iphoneos/Runner.app Payload/
           zip -qry "ACpdf-$BUILD_NAME.ipa" Payload
