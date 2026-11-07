@@ -1,4 +1,4 @@
-package com.arnaud.pdf_facile
+package com.arnaud.acpdf
 
 import io.flutter.embedding.android.FlutterActivity
 

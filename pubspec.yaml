@@ -1,4 +1,4 @@
-name: pdf_facile
+name: acpdf
 description: "ACpdf - éditeur PDF hors ligne (annotations, signatures, formulaires, pages)."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

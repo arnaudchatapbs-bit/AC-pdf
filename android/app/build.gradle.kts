@@ -16,7 +16,7 @@ fun signingValue(env: String, prop: String): String? = System.getenv(env) ?: key
 val releaseStoreFile = signingValue("ANDROID_KEYSTORE_PATH", "storeFile")
 
 android {
-    namespace = "com.arnaud.pdf_facile"
+    namespace = "com.arnaud.acpdf"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.arnaud.pdf_facile"
+        applicationId = "com.arnaud.acpdf"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -7,7 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Dépôt GitHub dont les Releases publient l'APK.
-const String kUpdateRepo = 'arnaudchata-appli/appli-pdf';
+const String kUpdateRepo = 'arnaudchatapbs-bit/AC-pdf';
 
 class UpdateInfo {
   UpdateInfo({
